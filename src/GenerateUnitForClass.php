@@ -41,29 +41,30 @@ class GenerateUnitForClass extends Command implements CustomCommandInterface
      *
      * @return string The description for the command
      */
-    public function getDescription() : string
+    public function getDescription(): string
     {
         return "Generates unit tests for class";
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $path =  $this->getSuiteConfig('unit')['path'];
+        $path = $this->getSuiteConfig('unit')['path'];
+
         if ($input->getArgument('className')) {
             $class = $input->getArgument('className');
-            $classes = get_declared_classes();
             $match = [];
-            foreach ($classes as $classWithNamespace) {
-                $parts = explode('\\', $classWithNamespace);
-                if (end($parts) == $class) {
-                    $match[] = $classWithNamespace;
-                }
+
+            if (class_exists($class) || interface_exists($class)){
+                $match = [$class];
             }
 
             if (1 == count($match)) {
-                //$output->write("Ok\n");
-                $generated = $this->render('unit', $class. "Test", end($match));
-                $this->createFile($path.DIRECTORY_SEPARATOR.$class. "Test.php", $generated, true);
+                $unitTestClassNameArr = explode('\\', $class);
+                $unitTestClassName = end($unitTestClassNameArr)."Test";
+                $generated = $this->render('unit',  $unitTestClassName, end($match));
+                $this->createFile($path . DIRECTORY_SEPARATOR . $unitTestClassName . ".php", $generated, true);
+            } else {
+                $output->writeln('No match', 1);
             }
 
         }
@@ -77,7 +78,7 @@ class GenerateUnitForClass extends Command implements CustomCommandInterface
 
         $methods = $reflectionClass->getMethods(ReflectionMethod::IS_PUBLIC);
         ob_start();
-        include __DIR__."/template/".$template.".php";
+        include __DIR__ . "/template/" . $template . ".php";
         $template = ob_get_clean();
 
 
